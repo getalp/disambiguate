@@ -13,6 +13,14 @@ def get_vocabulary_size(vocabulary_file_path):
     return vocabulary_size
 
 
+def get_embeddings_size(embeddings_file_path):
+    f = open(embeddings_file_path)
+    line = f.readline()
+    embeddings_size = len(line.split()[1:])
+    f.close()
+    return embeddings_size
+
+
 def load_vocabulary(vocabulary_file_path):
     vocabulary_file = open(vocabulary_file_path)
     vocabulary = []
@@ -22,22 +30,20 @@ def load_vocabulary(vocabulary_file_path):
     return vocabulary
 
 
-def get_pretrained_embeddings(pretrained_model_path, verbose=False):
-    if verbose:
-        print("Loading embeddings " + pretrained_model_path)
-    embeddings = []
-    embeddings_size = None
+def get_pretrained_embeddings(pretrained_model_path):
+    embeddings_count = 2 + get_vocabulary_size(pretrained_model_path)
+    embeddings_size = get_embeddings_size(pretrained_model_path)
+    embeddings = np.empty(shape=(embeddings_count, embeddings_size), dtype=np.float32)
+    embeddings[0] = np.zeros(embeddings_size)  # <padding> = 0
+    embeddings[1] = np.zeros(embeddings_size)  # <unknown> = 1
+    i = 2
     f = open(pretrained_model_path)
     for line in f:
         vector = line.split()[1:]
         vector = [float(i) for i in vector]
-        embeddings.append(vector)
-        if embeddings_size is None:
-            embeddings_size = len(vector)
+        embeddings[i] = np.array(vector, dtype=np.float32)
+        i += 1
     f.close()
-    embeddings.insert(0, np.zeros(embeddings_size))  # <padding> = 0
-    embeddings.insert(1, np.zeros(embeddings_size))  # <unknown> = 1
-    embeddings = np.array(embeddings, dtype=np.float32)
     return embeddings
 
 

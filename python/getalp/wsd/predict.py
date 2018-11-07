@@ -1,11 +1,10 @@
-from getalp.wsd.model import Model
 from getalp.wsd.predicter import Predicter
 import argparse
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_path', nargs="?", type=str)
+    parser.add_argument('--data_path', type=str)
     parser.add_argument('--weights', nargs="+", type=str)
     args = parser.parse_args()
 
