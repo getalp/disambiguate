@@ -10,7 +10,7 @@ This is the implementation used in the article [Improving the Coverage and the G
 - PyTorch (version 0.4.0 or higher) - <https://pytorch.org>
 - UFSAC - <https://github.com/getalp/UFSAC>
 
-To install **Python**, **Java** and **Maven**, you can use your package manager (apt-get, pacman...).
+To install **Python**, **Java** and **Maven**, you can use the package manager of your distribution (apt-get, pacman...).
 
 To install **PyTorch**, please follow [this page](https://pytorch.org/get-started).
 
@@ -39,8 +39,9 @@ Once the data are downloaded and extracted, you can use the following commands (
   This script evaluates a WSD model by computing its coverage, precision, recall and F1 scores on sense annotated corpora in the UFSAC format, with and without first sense backoff.  
 
 Description of the arguments:
-- `--data_path [DIR]` is the path to the directory containing the `input_vocabulary`, `output_vocabulary` and `config.json` files describing the model architecture
+- `--data_path [DIR]` is the path to the directory containing the files needed for describing the model architecture (files `config.json`, `input_vocabularyX` and `output_vocabularyX`) 
 - `--weights [FILE]...` is a list of model weights: if multiple weights are given, an ensemble of these weights is used in `decode.sh`, and both the evaluation of the ensemble of weights and the evaluation of each individual weight is performed in `evaluate.sh`
+- `--corpus [FILE]...` (`evaluate.sh` only) is the list of UFSAC corpora used for evaluating the WSD model
 
 Optional arguments: 
 - `--lowercase [true|false]` (default true) if you want to enable/disable lowercasing of input
@@ -50,4 +51,20 @@ UFSAC corpora are available in the [UFSAC repository](https://github.com/getalp/
 
 ## Train a WSD model
 
-This part is still being written, please come back later :)
+To train a model, first call the `./prepare_data.sh` script with the following arguments:
+- `--data_path [DIR]` is the path to the directory that will contain the description of the model (files `config.json`, `input_vocabularyX` and `output_vocabularyX`) and the processed training data (files `train` and `dev`)
+- `--train [FILE]...` is the list of corpora in UFSAC format used for training
+- `--dev [FILE]...` (optional) is the list of corpora in UFSAC format used for development
+- `--input_features [FEATURE]...` (default surface\_form) is the list of input features used, as UFSAC attributes. Possible values are, but not limited to, *surface_form*, *lemma*, *pos*, *wn30\_key*...
+- `--output_features [FEATURE]...` (default wn30\_key) is the list of output features to predict by the model, as UFSAC attributes. Possible values are the same as input features
+- `--lowercase [true|false]` (default true) if you want to enable/disable lowercasing of input
+- `--sense_reduction [true|false]` (default true) if you want to enable/disable the sense vocabulary reduction method.
+- `--add_monosemics [true|false]` (default false) if you want to consider all monosemic words annotated with their unique sense tag (even if they are not initially annotated) 
+- `--remove_monosemics [true|false]` (default false) if you want to remove the tag of all monosemic words
+- `--remove_duplicates [true|false]` (default true) if you want to remove duplicate sentences from the training set (output features are merged)
+
+
+
+
+
+This section is still being written, please come back later for more :)
