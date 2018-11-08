@@ -55,6 +55,7 @@ To train a model, first call the `./prepare_data.sh` script with the following a
 - `--data_path [DIR]` is the path to the directory that will contain the description of the model (files `config.json`, `input_vocabularyX` and `output_vocabularyX`) and the processed training data (files `train` and `dev`)
 - `--train [FILE]...` is the list of corpora in UFSAC format used for the training set
 - `--dev [FILE]...` (optional) is the list of corpora in UFSAC format used for the development set
+- `--dev_from_train [N]` (default `0`) randomly extracts `N` sentences from the training corpus and use it as development corpus
 - `--input_features [FEATURE]...` (default `surface_form`) is the list of input features used, as UFSAC attributes. Possible values are, but not limited to, `surface_form`, `lemma`, `pos`, `wn30_key`...
 - `--input_embeddings [FILE]...` (default `null`) is the list of pre-trained embeddings to use for each input feature. Must be the same number of arguments as `input_features`, use special value `null` if you want to train embeddings as part of the model
 - `--output_features [FEATURE]...` (default `wn30_key`) is the list of output features to predict by the model, as UFSAC attributes. Possible values are the same as input features
