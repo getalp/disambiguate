@@ -15,6 +15,7 @@ public class NeuralWSDPrepare
         parser.addArgumentList("train");
         parser.addArgumentList("dev");
         parser.addArgumentList("input_features", Collections.singletonList("surface_form"));
+        parser.addArgumentList("input_embeddings", Collections.singletonList("null"));
         parser.addArgumentList("output_features", Collections.singletonList("wn30_key"));
         parser.addArgument("lowercase", "true");
         parser.addArgument("uniform_dash", "false");
@@ -29,6 +30,7 @@ public class NeuralWSDPrepare
         List<String> trainingCorpusPaths = parser.getArgValueList("train");
         List<String> devCorpusPaths = parser.getArgValueList("dev");
         List<String> inputFeatures = parser.getArgValueList("input_features");
+        List<String> inputEmbeddings = parser.getArgValueList("input_embeddings");
         List<String> outputFeatures = parser.getArgValueList("output_features");
         boolean lowercase = parser.getArgValueBoolean("lowercase");
         boolean uniformDash = parser.getArgValueBoolean("uniform_dash");
@@ -52,14 +54,12 @@ public class NeuralWSDPrepare
             preparator.addDevelopmentCorpus(corpusPath);
         }
 
-        for (int i = 0 ; i < inputFeatures.size() ; i += 2)
+        assert(inputFeatures.size() == inputEmbeddings.size());
+
+        for (int i = 0 ; i < inputFeatures.size() ; i++)
         {
             String inputFeatureAnnotationName = inputFeatures.get(i);
-            String inputFeatureEmbeddings = "null";
-            if (i + 1 < inputFeatures.size())
-            {
-                inputFeatureEmbeddings = inputFeatures.get(i + 1);
-            }
+            String inputFeatureEmbeddings = inputEmbeddings.get(i);
             if (inputFeatureEmbeddings.equals("null"))
             {
                 preparator.addInputFeature(inputFeatureAnnotationName);
@@ -70,8 +70,10 @@ public class NeuralWSDPrepare
             }
         }
 
-        for (int i = 0 ; i < outputFeatures.size() ; i += 2)
+        for (int i = 0 ; i < outputFeatures.size() ; i++)
         {
+            preparator.addOutputFeature(outputFeatures.get(i));
+            /*
             String outputFeatureAnnotationName = outputFeatures.get(i);
             String outputFeatureVocabulary = "null";
             if (i + 1 < outputFeatures.size())
@@ -86,6 +88,7 @@ public class NeuralWSDPrepare
             {
                 preparator.addOutputFeature(outputFeatureAnnotationName, outputFeatureVocabulary);
             }
+            */
         }
 
         preparator.maxLineLength = 80;
