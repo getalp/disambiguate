@@ -4,7 +4,7 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_path', type=str)
+    parser.add_argument('--data_path', required=True, type=str)
     parser.add_argument('--weights', nargs="+", type=str)
     args = parser.parse_args()
 

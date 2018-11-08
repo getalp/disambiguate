@@ -4,10 +4,10 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--data_path', required=True, type=str, help="Path to the prepared data")
-    parser.add_argument('--model_path', required=True, type=str, help="Path to where to save the model")
-    parser.add_argument('--batch_size', nargs="?", type=int, default=100, help="Size of batch")
-    parser.add_argument('--ensemble_count', nargs="?", type=int, default=8, help="Number of models to train")
+    parser.add_argument('--data_path', required=True, type=str, help=" ")
+    parser.add_argument('--model_path', required=True, type=str, help=" ")
+    parser.add_argument('--batch_size', nargs="?", type=int, default=100, help=" ")
+    parser.add_argument('--ensemble_count', nargs="?", type=int, default=8, help=" ")
     parser.add_argument('--epoch_count', nargs="?", type=int, default=100, help=" ")
     parser.add_argument('--eval_frequency', nargs="?", type=int, default=4000, help=" ")
     parser.add_argument('--update_frequency', nargs="?", type=int, default=1, help=" ")
