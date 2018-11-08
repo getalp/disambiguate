@@ -13,7 +13,7 @@ public class NeuralWSDPrepare
         ArgumentParser parser = new ArgumentParser();
         parser.addArgument("data_path");
         parser.addArgumentList("train");
-        parser.addArgumentList("dev");
+        parser.addArgumentList("dev", Collections.emptyList());
         parser.addArgumentList("input_features", Collections.singletonList("surface_form"));
         parser.addArgumentList("input_embeddings", Collections.singletonList("null"));
         parser.addArgumentList("output_features", Collections.singletonList("wn30_key"));
