@@ -8,6 +8,7 @@ import getalp.wsd.ufsac.streaming.writer.StreamingCorpusWriterSentence;
 import getalp.wsd.ufsac.utils.CorpusPOSTaggerAndLemmatizer;
 import getalp.wsd.utils.ArgumentParser;
 import getalp.wsd.utils.WordnetUtils;
+import getalp.wsd.common.utils.Wrapper;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -39,10 +40,10 @@ public class NeuralWSDDecodeUFSAC
         boolean senseReduction = parser.getArgValueBoolean("sense_reduction");
         boolean lemmaPOSTagged = parser.getArgValueBoolean("lemma_pos_tagged");
 
-        CorpusPOSTaggerAndLemmatizer lemmaPOSTagger = null;
+        Wrapper<CorpusPOSTaggerAndLemmatizer> lemmaPOSTagger = new Wrapper<>(null);
         if (!lemmaPOSTagged)
         {
-            lemmaPOSTagger = new CorpusPOSTaggerAndLemmatizer();
+            lemmaPOSTagger.obj = new CorpusPOSTaggerAndLemmatizer();
         }
         NeuralDisambiguator disambiguator = new NeuralDisambiguator(pythonPath, dataPath, weights);
         disambiguator.lowercaseWords = lowercase;
@@ -53,9 +54,9 @@ public class NeuralWSDDecodeUFSAC
         {
             public void modifySentence(Sentence sentence)
             {
-                if (lemmaPOSTagger != null)
+                if (lemmaPOSTagger.obj != null)
                 {
-                    lemmaPOSTagger.tag(sentence.getWords());
+                    lemmaPOSTagger.obj.tag(sentence.getWords());
                 }
                 disambiguator.disambiguate(sentence, "wsd");
             }
