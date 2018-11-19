@@ -27,6 +27,7 @@ public class NeuralWSDDecodeUFSAC
         parser.addArgument("output");
         parser.addArgument("lowercase", "true");
         parser.addArgument("sense_reduction", "true");
+        parser.addArgument("lemma_pos_tagged", "false");
         if (!parser.parse(args)) return;
 
         String pythonPath = parser.getArgValue("python_path");
@@ -36,8 +37,13 @@ public class NeuralWSDDecodeUFSAC
         String outputPath = parser.getArgValue("output");
         boolean lowercase = parser.getArgValueBoolean("lowercase");
         boolean senseReduction = parser.getArgValueBoolean("sense_reduction");
+        boolean lemmaPOSTagged = parser.getArgValueBoolean("lemma_pos_tagged");
 
-        CorpusPOSTaggerAndLemmatizer tagger = new CorpusPOSTaggerAndLemmatizer();
+        CorpusPOSTaggerAndLemmatizer lemmaPOSTagger = null;
+        if (!lemmaPOSTagged)
+        {
+            lemmaPOSTagger = new CorpusPOSTaggerAndLemmatizer();
+        }
         NeuralDisambiguator disambiguator = new NeuralDisambiguator(pythonPath, dataPath, weights);
         disambiguator.lowercaseWords = lowercase;
         if (senseReduction) disambiguator.reducedOutputVocabulary = WordnetUtils.getReducedSynsetKeysWithHypernyms3(WordnetHelper.wn30());
@@ -47,7 +53,10 @@ public class NeuralWSDDecodeUFSAC
         {
             public void modifySentence(Sentence sentence)
             {
-                tagger.tag(sentence.getWords());
+                if (lemmaPOSTagger != null)
+                {
+                    lemmaPOSTagger.tag(sentence.getWords());
+                }
                 disambiguator.disambiguate(sentence, "wsd");
             }
         };
