@@ -1,19 +1,11 @@
 import getalp.wsd.common.wordnet.WordnetHelper;
 import getalp.wsd.method.neural.NeuralDisambiguator;
 import getalp.wsd.ufsac.core.Sentence;
-import getalp.wsd.ufsac.core.Word;
 import getalp.wsd.ufsac.streaming.modifier.StreamingCorpusModifierSentence;
-import getalp.wsd.ufsac.streaming.reader.StreamingCorpusReaderSentence;
-import getalp.wsd.ufsac.streaming.writer.StreamingCorpusWriterSentence;
 import getalp.wsd.ufsac.utils.CorpusPOSTaggerAndLemmatizer;
 import getalp.wsd.utils.ArgumentParser;
 import getalp.wsd.utils.WordnetUtils;
 import getalp.wsd.common.utils.Wrapper;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.util.List;
 
 public class NeuralWSDDecodeUFSAC
