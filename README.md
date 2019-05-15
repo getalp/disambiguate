@@ -1,7 +1,9 @@
 # disambiguate: Neural Word Sense Disambiguation Toolkit
 
 This repository contains a set of easy-to-use tools for training, evaluating and using neural WSD models. 
-This is the implementation used in the article [Improving the Coverage and the Generalization Ability of Neural Word Sense Disambiguation through Hypernymy and Hyponymy Relationships](https://arxiv.org/abs/1811.00960), written by Loïc Vial, Benjamin Lecouteux and Didier Schwab.
+This is the implementation used in the article [Sense Vocabulary Compression through the Semantic Knowledge of WordNet for Neural Word Sense Disambiguation](https://arxiv.org/abs/1905.05677), written by Loïc Vial, Benjamin Lecouteux and Didier Schwab.
+
+**/!\ The current version of this repository does not support yet BERT embeddings, ELMo embeddings, and Transformer encoders, but it will be available soon ! (the code is being cleaned in private first ;))**
 
 ## Dependencies
 - Python (version 3.6 or higher) - <https://python.org>
