@@ -18,9 +18,9 @@ To install **Python**, **Java** and **Maven**, you can use the package manager o
 
 To install **PyTorch**, please follow the instructions on [this page](https://pytorch.org/get-started).
 
-To install **AllenNLP** (necessary if using ELMo), please follow the instructions on [this page](https://allennlp.org/tutorials).
+To install **AllenNLP** (necessary for using ELMo), please follow the instructions on [this page](https://allennlp.org/tutorials).
 
-To install **huggingface's pytorch-pretrained-BERT** (necessary if using BERT), please follow the instructions on [this page](https://github.com/huggingface/pytorch-pretrained-BERT).
+To install **huggingface's pytorch-pretrained-BERT** (necessary for using BERT), please follow the instructions on [this page](https://github.com/huggingface/pytorch-pretrained-BERT).
 
 To install **UFSAC**, simply:
 
@@ -65,7 +65,7 @@ Optional arguments:
 - `--sense_compression_hypernyms [true|false]` (default `true`) if you want to enable/disable the sense vocabulary compression through the hypernym/hyponym relationships.
 - `--sense_compression_file [FILE]` if you want to use another sense vocabulary compression mapping.
 
-UFSAC corpora are available in the [UFSAC repository](https://github.com/getalp/UFSAC). If you want to reproduce our results, please download UFSAC 2.1 and you will find the SemCor (file `semcor.xml`, the WordNet Gloss Tagged (file `wngt.xml`) and all the SemEval/SensEval evaluation corpora that we used (files raganato_*.xml).
+UFSAC corpora are available in the [UFSAC repository](https://github.com/getalp/UFSAC). If you want to reproduce our results, please download UFSAC 2.1 and you will find the SemCor (file `semcor.xml`, the WordNet Gloss Tagged (file `wngt.xml`) and all the SemEval/SensEval evaluation corpora that we used (files `raganato_*.xml`).
 
 ## Training new WSD models
 
