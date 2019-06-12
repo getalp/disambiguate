@@ -102,7 +102,7 @@ Call the `./train.sh` script with the following main arguments:
 - `--lr [N]` (default `0.0001`) is the initial learning rate of the optimizer (Adam)
 - `--input_embeddings_size [N]` (default `300`) is the size of input embeddings (if not using pre-trained embeddings, BERT nor ELMo)
 - `--input_elmo_model [MODEL]` is the name of the ELMo model to use (one of `small`, `medium` or `original`), it will be downloaded automatically.
-- `--input_bert_model [MODEL]` is the name of the BERT model to use (of the form `bert-{base,large}-(multilingual-(un)cased`), it will be downloaded automatically.
+- `--input_bert_model [MODEL]` is the name of the BERT model to use (of the form `bert-{base,large}-(multilingual-)(un)cased`), it will be downloaded automatically.
 - `--encoder_type [ENCODER]` (default `lstm`) is one of `lstm` or `transformer`.
 - `--encoder_lstm_hidden_size [N]` (default `1000`)
 - `--encoder_lstm_layers [N]` (default `1`)
