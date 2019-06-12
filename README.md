@@ -18,9 +18,9 @@ To install **Python**, **Java** and **Maven**, you can use the package manager o
 
 To install **PyTorch**, please follow the instructions on [this page](https://pytorch.org/get-started).
 
-To install **AllenNLP** (necessary for using ELMo), please follow the instructions on [this page](https://allennlp.org/tutorials).
+To install **AllenNLP** (necessary if using ELMo), please follow the instructions on [this page](https://allennlp.org/tutorials).
 
-To install **huggingface's pytorch-pretrained-BERT** (necessary for using BERT), please follow the instructions on [this page](https://github.com/huggingface/pytorch-pretrained-BERT).
+To install **huggingface's pytorch-pretrained-BERT** (necessary if using BERT), please follow the instructions on [this page](https://github.com/huggingface/pytorch-pretrained-BERT).
 
 To install **UFSAC**, simply:
 
