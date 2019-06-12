@@ -36,7 +36,7 @@ public class MultipleDisambiguationResult
     
     public double[] allScores()
     {
-        return results.stream().mapToDouble((DisambiguationResult r) -> {return r.scoreF1();}).toArray();
+        return results.stream().mapToDouble(DisambiguationResult::scoreF1).toArray();
     }
     
     public double[] allTimes()

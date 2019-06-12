@@ -1,83 +1,134 @@
 import json
-from getalp.wsd.common import get_pretrained_embeddings, get_vocabulary_size
+from getalp.common.common import get_value_as_int_list, pad_list, get_value_as_str_list
+from getalp.wsd.data_config import DataConfig
 from typing import List
-import numpy as np
-import os
+
 
 class ModelConfig(object):
 
-    def __init__(self):
-        self.config_root_path: str = str()
-        self.input_features: int = int()
-        self.input_vocabulary_sizes: List[int] = []
-        self.input_embeddings: List[np.array] = []
+    def __init__(self, data_config: DataConfig):
+        self.data_config: DataConfig = data_config
         self.input_embeddings_sizes: List[int] = []
-        self.output_features: int = int()
-        self.output_vocabulary_sizes: List[int] = []
-        self.lstm_units_size: int = int()
-        self.lstm_layers: int = int()
-        self.linear_before_lstm: bool = bool()
-        self.dropout_rate_before_lstm: float = float()
-        self.dropout_rate: float = float()
-        self.word_dropout_rate: float = float()
-        self.attention_layer: bool = bool()
-        self.legacy_model: bool = bool()
+        self.input_elmo_path: List[str] = []
+        self.input_bert_path: List[str] = []
+        self.input_flair_path: List[str] = []
+        self.input_word_dropout_rate: float = float()
+        self.input_resize: List[int] = []
+        self.input_apply_linear: bool = bool()
+        self.input_linear_size: int = int()
+        self.input_dropout_rate: float = float()
+        self.encoder_type: str = str()
+        self.encoder_lstm_hidden_size: int = int()
+        self.encoder_lstm_layers: int = int()
+        self.encoder_lstm_dropout: float = float()
+        self.encoder_transformer_hidden_size: int = int()
+        self.encoder_transformer_layers: int = int()
+        self.encoder_transformer_heads: int = int()
+        self.encoder_transformer_dropout: float = float()
+        self.encoder_transformer_positional_encoding: bool = bool()
+        self.encoder_transformer_scale_embeddings: bool = bool()
+        self.encoder_output_size: int = int()
+        self.decoder_translation_transformer_hidden_size = int()
+        self.decoder_translation_transformer_layers = int()
+        self.decoder_translation_transformer_heads = int()
+        self.decoder_translation_transformer_dropout = float()
+        self.decoder_translation_scale_embeddings: bool = bool()
+        self.decoder_translation_share_embeddings = bool()
+        self.decoder_translation_share_encoder_embeddings = bool()
+        self.decoder_translation_tokenizer_bert = str()
 
     def load_from_file(self, file_path):
         file = open(file_path, "r")
         data = json.load(file)
         file.close()
-        self.load_from_serializable_data(data, os.path.dirname(os.path.abspath(file_path)))
+        self.load_from_serializable_data(data)
 
-    def load_from_serializable_data(self, data, config_root_path):
-        self.config_root_path = config_root_path
-        self.input_features = data["input_features"]
-        self.load_input_vocabularies()
-        self.load_input_embeddings(data)
-        self.output_features = data["output_features"]
-        self.load_output_vocabulary()
-        self.lstm_units_size = data["lstm_units_size"]
-        self.lstm_layers = data["lstm_layers"]
-        self.linear_before_lstm = data["linear_before_lstm"]
-        self.dropout_rate_before_lstm = data["dropout_rate_before_lstm"]
-        self.dropout_rate = data["dropout_rate"]
-        self.word_dropout_rate = data["word_dropout_rate"]
-        self.attention_layer = data["attention_layer"]
-        self.legacy_model = data["legacy_model"]
+    def load_from_serializable_data(self, data):
+        self.set_input_elmo_path(data.get("input_elmo_path", None))
+        self.set_input_bert_model(data.get("input_bert_path", None))
+        self.set_input_flair_model(data.get("input_flair_path", None))
+        self.load_input_embeddings_sizes(data)
+        self.input_word_dropout_rate = data.get("input_word_dropout_rate", None)
+        self.input_resize = data.get("input_resize", [None for _ in range(self.data_config.input_features)])
+        self.input_apply_linear = data.get("input_apply_linear", False)
+        self.input_linear_size = data.get("input_linear_size", None)
+        self.input_dropout_rate = data.get("input_dropout_rate", None)
+        self.encoder_type = data.get("encoder_type", "lstm")
+        self.encoder_lstm_hidden_size = data.get("encoder_lstm_hidden_size", 1000)
+        self.encoder_lstm_layers = data.get("encoder_lstm_layers", 1)
+        self.encoder_lstm_dropout = data.get("encoder_lstm_dropout", 0.5)
+        self.encoder_transformer_hidden_size = data.get("encoder_transformer_hidden_size", 512)
+        self.encoder_transformer_layers = data.get("encoder_transformer_layers", 6)
+        self.encoder_transformer_heads = data.get("encoder_transformer_heads", 8)
+        self.encoder_transformer_dropout = data.get("encoder_transformer_dropout", 0.1)
+        self.encoder_transformer_positional_encoding = data.get("encoder_transformer_positional_encoding", True)
+        self.encoder_transformer_scale_embeddings = data.get("encoder_transformer_scale_embeddings", True)
+        self.decoder_translation_transformer_hidden_size = data.get("decoder_translation_transformer_hidden_size", 512)
+        self.decoder_translation_transformer_layers = data.get("decoder_translation_transformer_layers", 6)
+        self.decoder_translation_transformer_heads = data.get("decoder_translation_transformer_heads", 8)
+        self.decoder_translation_transformer_dropout = data.get("decoder_translation_transformer_dropout", 0.1)
+        self.decoder_translation_scale_embeddings = data.get("decoder_translation_scale_embeddings", True)
+        self.decoder_translation_share_embeddings = data.get("decoder_translation_share_embeddings", False)
+        self.decoder_translation_share_encoder_embeddings = data.get("decoder_translation_share_encoder_embeddings", False)
+        self.decoder_translation_tokenizer_bert = data.get("decoder_translation_tokenizer_bert", None)
 
-    def load_input_vocabularies(self):
-        for i in range(0, self.input_features):
-            self.input_vocabulary_sizes.append(get_vocabulary_size(self.config_root_path + "/input_vocabulary" + str(i)))
+    def load_input_embeddings_sizes(self, data):
+        self.input_embeddings_sizes = get_value_as_int_list(data.get("input_embeddings_size", None))
+        pad_list(self.input_embeddings_sizes, self.data_config.input_features, 300)
+        self.reset_input_embeddings_sizes()
 
-    def load_input_embeddings(self, data):
-        input_embeddings_paths = data["input_embeddings_path"]
-        if input_embeddings_paths is None:
-            input_embeddings_paths = []
-        elif isinstance(input_embeddings_paths, str):
-            input_embeddings_paths = [input_embeddings_paths]
-        self.input_embeddings = []
-        for input_embeddings_path in input_embeddings_paths:
-            if input_embeddings_path is None:
-                self.input_embeddings.append(None)
-            elif os.path.isabs(input_embeddings_path):
-                self.input_embeddings.append(get_pretrained_embeddings(input_embeddings_path))
-            else:
-                self.input_embeddings.append(get_pretrained_embeddings(self.config_root_path + "/" + input_embeddings_path))
-        for i in range(len(self.input_embeddings), len(self.input_vocabulary_sizes)):
-            self.input_embeddings.append(None)
+    def set_input_elmo_path(self, elmo_path):
+        self.input_elmo_path = get_value_as_str_list(elmo_path)
+        pad_list(self.input_elmo_path, self.data_config.input_features, None)
+        self.reset_input_embeddings_sizes()
 
-        self.input_embeddings_sizes = data["input_embeddings_size"]
-        if self.input_embeddings_sizes is None:
-            self.input_embeddings_sizes = []
-        elif isinstance(self.input_embeddings_sizes, int):
-            self.input_embeddings_sizes = [self.input_embeddings_sizes]
-        for i in range(len(self.input_embeddings_sizes), len(self.input_embeddings)):
-            self.input_embeddings_sizes.append(None)
-        for i in range(0, len(self.input_embeddings_sizes)):
-            if self.input_embeddings[i] is not None:
-                self.input_embeddings_sizes[i] = self.input_embeddings[i].shape[1]
+    def set_input_bert_model(self, bert_model):
+        self.input_bert_path = get_value_as_str_list(bert_model)
+        pad_list(self.input_bert_path, self.data_config.input_features, None)
+        self.reset_input_embeddings_sizes()
 
-    def load_output_vocabulary(self):
-        for i in range(0, self.output_features):
-            self.output_vocabulary_sizes.append(get_vocabulary_size(self.config_root_path + "/output_vocabulary" + str(i)))
+    def set_input_flair_model(self, flair_model):
+        self.input_flair_path = get_value_as_str_list(flair_model)
+        pad_list(self.input_flair_path, self.data_config.input_features, None)
+        self.reset_input_embeddings_sizes()
 
+    def reset_input_embeddings_sizes(self):
+        for i in range(len(self.input_embeddings_sizes)):
+            if self.data_config.input_embeddings[i] is not None:
+                self.input_embeddings_sizes[i] = self.data_config.input_embeddings[i].shape[1]
+            if self.input_elmo_path[i] is not None \
+               or self.input_bert_path[i] is not None \
+               or self.input_flair_path[i] is not None:
+                self.input_embeddings_sizes[i] = None
+
+    def get_serializable_data(self):
+        data = {
+            "input_embeddings_size": self.input_embeddings_sizes,
+            "input_elmo_path": self.input_elmo_path,
+            "input_bert_path": self.input_bert_path,
+            "input_flair_path": self.input_flair_path,
+            "input_word_dropout_rate": self.input_word_dropout_rate,
+            "input_resize": self.input_resize,
+            "input_apply_linear": self.input_apply_linear,
+            "input_linear_size": self.input_linear_size,
+            "input_dropout_rate": self.input_dropout_rate,
+            "encoder_type": self.encoder_type,
+            "encoder_lstm_hidden_size": self.encoder_lstm_hidden_size,
+            "encoder_lstm_layers": self.encoder_lstm_layers,
+            "encoder_lstm_dropout": self.encoder_lstm_dropout,
+            "encoder_transformer_hidden_size": self.encoder_transformer_hidden_size,
+            "encoder_transformer_layers": self.encoder_transformer_layers,
+            "encoder_transformer_heads": self.encoder_transformer_heads,
+            "encoder_transformer_dropout": self.encoder_transformer_dropout,
+            "encoder_transformer_positional_encoding": self.encoder_transformer_positional_encoding,
+            "encoder_transformer_scale_embeddings": self.encoder_transformer_scale_embeddings,
+            "decoder_translation_transformer_hidden_size": self.decoder_translation_transformer_hidden_size,
+            "decoder_translation_transformer_layers": self.decoder_translation_transformer_layers,
+            "decoder_translation_transformer_heads": self.decoder_translation_transformer_heads,
+            "decoder_translation_transformer_dropout": self.decoder_translation_transformer_dropout,
+            "decoder_translation_scale_embeddings": self.decoder_translation_scale_embeddings,
+            "decoder_translation_share_embeddings": self.decoder_translation_share_embeddings,
+            "decoder_translation_share_encoder_embeddings": self.decoder_translation_share_encoder_embeddings,
+            "decoder_translation_tokenizer_bert": self.decoder_translation_tokenizer_bert
+        }
+        return data

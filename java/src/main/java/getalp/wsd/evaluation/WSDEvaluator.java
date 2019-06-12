@@ -5,9 +5,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
+import getalp.wsd.common.utils.POSConverter;
 import getalp.wsd.common.wordnet.WordnetHelper;
 import getalp.wsd.method.Disambiguator;
 import getalp.wsd.method.result.MultipleDisambiguationResult;
@@ -80,8 +80,15 @@ public class WSDEvaluator extends ObjectUsingSystemOutALot
         long endTime = System.currentTimeMillis();
         double time = (endTime - startTime) / 1000.0;
         totalScore.time = time;
-        print("; good/bad/missed/total : " + totalScore.good + "/" + totalScore.bad + "/" + totalScore.missed + "/" + totalScore.total);
-        println(" ; C/P/R/F1 : " + String.format("%.4f", totalScore.coverage()) + "/" + String.format("%.4f", totalScore.scorePrecision()) + "/" + String.format("%.4f", totalScore.scoreRecall()) + "/" + String.format("%.4f", totalScore.scoreF1()) + " ; time : " + totalScore.time + " seconds");
+        print("; good/bad/missed/total : " + totalScore.good + "/" + totalScore.bad + "/" + totalScore.missed() + "/" + totalScore.total);
+        print(" ; C/P/R/F1 : " + String.format("%.4f", totalScore.coverage()) + "/" + String.format("%.4f", totalScore.scorePrecision()) + "/" + String.format("%.4f", totalScore.scoreRecall()) + "/" + String.format("%.4f", totalScore.scoreF1()));
+        for (String pos : Arrays.asList("n", "v", "a", "r", "x"))
+        {
+            print(" ; [" + pos + "] good/bad/missed/total : " + totalScore.goodPerPOS.get(pos) + "/" + totalScore.badPerPOS.get(pos) + "/" + totalScore.missedPerPOS(pos) + "/" + totalScore.totalPerPOS.get(pos));
+            print(" ; [" + pos + "] C/P/R/F1 : " + String.format("%.4f", totalScore.coveragePerPOS(pos)) + "/" + String.format("%.4f", totalScore.scorePrecisionPerPOS(pos)) + "/" + String.format("%.4f", totalScore.scoreRecallPerPOS(pos)) + "/" + String.format("%.4f", totalScore.scoreF1PerPOS(pos)));
+
+        }
+        println(" ; time : " + totalScore.time + " seconds");
         printFailed();
         saveResultToFile(corpus.getDocuments(), "wsd_test");
         return totalScore;
@@ -99,12 +106,11 @@ public class WSDEvaluator extends ObjectUsingSystemOutALot
     
     public DisambiguationResult computeDisambiguationResult(List<Word> wordList, String referenceSenseTag, String candidateSenseTag, String confidenceValueTag, double confidenceThreshold, WordnetHelper wn)
     {
-        int total = 0;
-        int good = 0;
-        int bad = 0;
+        DisambiguationResult res = new DisambiguationResult();
         for (int i = 0 ; i < wordList.size() ; i++)
         {
             Word word = wordList.get(i);
+            String wordPOS = POSConverter.toWNPOS(word.getAnnotationValue("pos"));
             
             List<String> referenceSenseKeys = word.getAnnotationValues(referenceSenseTag, ";");
             if (referenceSenseKeys.isEmpty()) continue;
@@ -122,7 +128,8 @@ public class WSDEvaluator extends ObjectUsingSystemOutALot
             }
             if (referenceSynsetKeys.isEmpty()) continue;
             
-            total += 1;
+            res.total += 1;
+            res.totalPerPOS.put(wordPOS, res.totalPerPOS.get(wordPOS) + 1);
             
             String candidateSenseKey = word.getAnnotationValue(candidateSenseTag);
             if (candidateSenseKey.isEmpty()) continue;
@@ -134,18 +141,21 @@ public class WSDEvaluator extends ObjectUsingSystemOutALot
                 if (confidenceValue != Double.POSITIVE_INFINITY && confidenceValue < confidenceThreshold) continue;
             }
             String candidateSynsetKey = wn.getSynsetKeyFromSenseKey(candidateSenseKey);
-            bad += 1;
+            res.bad += 1;
+            res.badPerPOS.put(wordPOS, res.badPerPOS.get(wordPOS) + 1);
             for (String refSynsetKey : referenceSynsetKeys)
             {
                 if (refSynsetKey.equals(candidateSynsetKey))
                 {
-                    good += 1;
-                    bad -= 1;
+                    res.good += 1;
+                    res.bad -= 1;
+                    res.goodPerPOS.put(wordPOS, res.goodPerPOS.get(wordPOS) + 1);
+                    res.badPerPOS.put(wordPOS, res.badPerPOS.get(wordPOS) - 1);
                     break;
                 }
             }
         }
-        return new DisambiguationResult(total, good, bad);
+        return res;
     }
     
     private void saveResultToFile(List<Document> documents, String candidateSenseTag)

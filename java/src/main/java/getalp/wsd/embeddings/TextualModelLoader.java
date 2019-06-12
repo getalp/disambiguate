@@ -18,7 +18,7 @@ public class TextualModelLoader
     
     public TextualModelLoader()
     {
-        this(true);
+        this(false);
     }
     
     public TextualModelLoader(boolean verbose)
