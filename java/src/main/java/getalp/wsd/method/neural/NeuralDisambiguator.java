@@ -68,6 +68,8 @@ public class NeuralDisambiguator extends DisambiguatorContextSentenceBatch imple
 
     public boolean filterLemma = true;
 
+    public boolean verbose = false;
+
     public Map<String, String> reducedOutputVocabulary = null;
 
     // --- end public options
@@ -161,6 +163,10 @@ public class NeuralDisambiguator extends DisambiguatorContextSentenceBatch imple
         if (extraLemma) args.add("--output_all_features");
         ProcessBuilder pb = new ProcessBuilder(args);
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+        if (verbose)
+        {
+            System.out.println(pb.command().toString());
+        }
         pythonProcess = pb.start();
         pythonProcessReader = new BufferedReader(new InputStreamReader(pythonProcess.getInputStream()));
         pythonProcessWriter = new BufferedWriter(new OutputStreamWriter(pythonProcess.getOutputStream()));
@@ -278,6 +284,14 @@ public class NeuralDisambiguator extends DisambiguatorContextSentenceBatch imple
                     featureValue = Integer.toString(featureVocabulary.get(featureValue));
                 }
                 featureValues.add(featureValue);
+                if (verbose)
+                {
+                    System.out.println(featureValue);
+                }
+            }
+            if (verbose)
+            {
+                System.out.println(w);
             }
             pythonProcessWriter.write(StringUtils.join(featureValues, "/") + " ");
         }

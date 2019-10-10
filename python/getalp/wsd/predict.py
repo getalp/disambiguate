@@ -11,6 +11,7 @@ def main():
     parser.add_argument('--disambiguate', action="store_true", help=" ")
     parser.add_argument('--beam_size', nargs="?", type=int, default=1, help=" ")
     parser.add_argument('--output_all_features', action="store_true", help=" ")
+    parser.add_argument('--write_log', action="store_false", help=" ")
     args = parser.parse_args()
 
     predicter = Predicter()
@@ -21,6 +22,7 @@ def main():
     predicter.disambiguate = args.disambiguate
     predicter.beam_size = args.beam_size
     predicter.output_all_features = args.output_all_features
+    predicter.write_log = args.write_log
 
     predicter.predict()
 

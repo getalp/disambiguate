@@ -15,7 +15,9 @@ class Predicter(object):
         self.translate: bool = False
         self.beam_size: int = int()
         self.output_all_features: bool = bool()
+        self.write_log: bool = bool()
         self.data_config: DataConfig = None
+        self.log = open('output.log', 'w+')
 
     def predict(self):
         config_file_path = self.training_root_path + "/config.json"
@@ -38,6 +40,8 @@ class Predicter(object):
         batch_x = None
         batch_z = None
         for line in sys.stdin:
+            if self.write_log:
+                self.log.write("input: " + line)
             if i == 0:
                 sample_x = read_sample_x_from_string(line, feature_count=config.data_config.input_features, clear_text=config.data_config.input_clear_text)
                 self.preprocess_sample_x(ensemble, sample_x)
@@ -77,6 +81,11 @@ class Predicter(object):
     def preprocess_sample_x(ensemble: List[Model], sample_x):
         ensemble[0].preprocess_samples([[sample_x]])
 
+    def _write(self, val):
+        if self.write_log:
+            self.log.write("output: " + val)
+        sys.stdout.write(val)
+
     def predict_and_output(self, ensemble: List[Model], batch_x, batch_z, clear_text):
         pad_batch_x(batch_x, clear_text)
         output_wsd, output_translation = None, None
@@ -85,7 +94,7 @@ class Predicter(object):
             output_all_features = Predicter.predict_ensemble_all_features_on_batch(ensemble, batch_x)
             batch_all_features = Predicter.generate_all_features_on_batch(output_all_features, batch_x)
             for sample_all_features in batch_all_features:
-                sys.stdout.write(sample_all_features + "\n")
+                self._write(sample_all_features + "\n")
             sys.stdout.flush()
             return
         if self.disambiguate and not self.translate:
@@ -97,18 +106,17 @@ class Predicter(object):
         if output_wsd is not None and output_translation is None:
             batch_wsd = Predicter.generate_wsd_on_batch(output_wsd, batch_z)
             for sample_wsd in batch_wsd:
-                sys.stdout.write(sample_wsd + "\n")
+                self._write(sample_wsd + "\n")
         elif output_translation is not None and output_wsd is None:
             batch_translation = Predicter.generate_translation_on_batch(output_translation, ensemble[0].config.data_config.output_translation_vocabularies[0][0])
             for sample_translation in batch_translation:
-                sys.stdout.write(sample_translation + "\n")
+                self._write(sample_translation + "\n")
         elif output_wsd is not None and output_translation is not None:
             batch_wsd = Predicter.generate_wsd_on_batch(output_wsd, batch_z)
             batch_translation = Predicter.generate_translation_on_batch(output_translation, ensemble[0].config.data_config.output_translation_vocabularies[0][0])
             assert len(batch_wsd) == len(batch_translation)
-            for i in range(len(batch_wsd)):
-                sys.stdout.write(batch_wsd[i] + "\n")
-                sys.stdout.write(batch_translation[i] + "\n")
+            for wsd, trans in zip(batch_wsd, batch_translation):
+                self._write(wsd + "\n" + trans + "\n")
         sys.stdout.flush()
 
     @staticmethod
