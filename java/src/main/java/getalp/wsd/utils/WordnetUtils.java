@@ -3,12 +3,8 @@ package getalp.wsd.utils;
 import java.io.BufferedReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import getalp.wsd.common.utils.POSConverter;
 import getalp.wsd.common.wordnet.WordnetHelper;
@@ -484,6 +480,204 @@ public class WordnetUtils
             newClusters.put(synsetKey, antonymClusters.get(currentClusters.get(synsetKey)));
         }
         return newClusters;
+    }
+
+    public static Map<String, String> initMapping()
+    {
+        WordnetHelper wn = WordnetHelper.wn30();
+        Map<String, String> mapping = new HashMap<>();
+        for (String wordKey : wn.getVocabulary())
+        {
+            for (String senseKey : wn.getSenseKeyListFromWordKey(wordKey))
+            {
+                String synsetKey = wn.getSynsetKeyFromSenseKey(senseKey);
+                mapping.putIfAbsent(synsetKey, synsetKey);
+            }
+        }
+        return mapping;
+    }
+
+    private static boolean checkIsOkayToChangeInMapping(String key, String newValue, Map<String, String> mapping, Map<String, List<String>> synsetKeyToWordKeys, Map<String, List<String>> wordKeyToSynsetKeys)
+    {
+        for (String wordKey : synsetKeyToWordKeys.get(key))
+        {
+            Set<String> set = new HashSet<>();
+            for (String synsetKey : wordKeyToSynsetKeys.get(wordKey))
+            {
+                String mappedSynsetKey;
+                if (synsetKey.equals(key))
+                {
+                    mappedSynsetKey = newValue;
+                }
+                else
+                {
+                    mappedSynsetKey = mapping.get(synsetKey);
+                }
+                if (set.contains(mappedSynsetKey))
+                {
+                    return false;
+                }
+                set.add(mappedSynsetKey);
+            }
+        }
+        return true;
+    }
+
+    private static boolean checkIsOkayToMergeClusters(String clusterKey1, String clusterKey2, Map<String, List<String>> inverseMapping, Map<String, String> mapping, Map<String, List<String>> synsetKeyToWordKeys, Map<String, List<String>> wordKeyToSynsetKeys)
+    {
+        for (String synsetKey : inverseMapping.get(clusterKey2))
+        {
+            if (!checkIsOkayToChangeInMapping(synsetKey, clusterKey1, mapping, synsetKeyToWordKeys, wordKeyToSynsetKeys))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static Map<String, String> getSenseCompressionThroughAllRelationsClusters()
+    {
+        WordnetHelper wn = WordnetHelper.wn30();
+
+        // create synsetKeyToWordKeys
+        Map<String, List<String>> synsetKeyToWordKeys = new HashMap<>();
+        for (String wordKey : wn.getVocabulary())
+        {
+            for (String senseKey : wn.getSenseKeyListFromWordKey(wordKey))
+            {
+                String synsetKey = wn.getSynsetKeyFromSenseKey(senseKey);
+                synsetKeyToWordKeys.putIfAbsent(synsetKey, new ArrayList<>());
+                synsetKeyToWordKeys.get(synsetKey).add(wordKey);
+            }
+        }
+
+        // create wordKeyToSynsetKeys
+        Map<String, List<String>> wordKeyToSynsetKeys = new HashMap<>();
+        for (String wordKey : wn.getVocabulary())
+        {
+            wordKeyToSynsetKeys.put(wordKey, new ArrayList<>());
+            for (String senseKey : wn.getSenseKeyListFromWordKey(wordKey))
+            {
+                String synsetKey = wn.getSynsetKeyFromSenseKey(senseKey);
+                wordKeyToSynsetKeys.get(wordKey).add(synsetKey);
+            }
+        }
+
+        // create mapping (synset to cluster)
+        Map<String, String> mapping = initMapping();
+
+        // create inverseMapping (cluster to synsets)
+        Map<String, List<String>> inverseMapping = new HashMap<>();
+        for (String synsetKey : mapping.keySet())
+        {
+            inverseMapping.put(synsetKey, new ArrayList<>(Collections.singletonList(synsetKey)));
+        }
+
+        // create relatedClusters (cluster to related clusters)
+        Map<String, List<String>> relatedClusters = new HashMap<>();
+        for (String synsetKey : mapping.keySet())
+        {
+            relatedClusters.put(synsetKey, new ArrayList<>(wn.getRelatedSynsetsKeyFromSynsetKey(synsetKey)));
+            if (wn.getSenseKeyListFromSynsetKey(synsetKey).size() == 1)
+            {
+                relatedClusters.get(synsetKey).addAll(wn.getRelatedSynsetsKeyFromSenseKey(wn.getSenseKeyListFromSynsetKey(synsetKey).get(0)));
+            }
+        }
+
+        // ensure symetry in related clusters
+        for (String synsetKey : mapping.keySet())
+        {
+            for (String relatedSynsetKey : relatedClusters.get(synsetKey))
+            {
+                relatedClusters.get(relatedSynsetKey).add(synsetKey);
+            }
+        }
+
+        // ensure uniqueness in related clusters
+        for (String synsetKey : mapping.keySet())
+        {
+            relatedClusters.put(synsetKey, relatedClusters.get(synsetKey).stream().distinct().filter(key -> !synsetKey.equals(key)).collect(Collectors.toList()));
+        }
+
+        // create clusterSizes (size of each cluster)
+        Map<String, Integer> clusterSizes = new HashMap<>();
+        for (String synsetKey : mapping.keySet())
+        {
+            clusterSizes.put(synsetKey, 1);
+        }
+
+        int previousTotal = inverseMapping.size();
+        int total = -1;
+        int step = 0;
+        outer:
+        while (total != previousTotal)
+        {
+            System.out.print("sense cluster creation step " + step);
+            step++;
+
+            int i = 0;
+            previousTotal = inverseMapping.size();
+
+            //for (String clusterKey : new ArrayList<>(inverseMapping.keySet()))
+            //for (String clusterKey : inverseMapping.keySet().stream().sorted(Comparator.comparingInt(clusterSizes::get)).collect(Collectors.toList()))
+            List<String> iter = clusterSizes.entrySet().stream().sorted(Map.Entry.comparingByValue()).map(Map.Entry::getKey).collect(Collectors.toList());
+            //Collections.shuffle(iter);
+            for (String clusterKey : iter)
+            {
+                //System.out.print("  " + i + "/" + total + "\r");
+                //System.out.flush();
+                //i++;
+
+                //if (!inverseMapping.containsKey(clusterKey)) continue;
+
+                //for (String relatedClusterKey : new ArrayList<>(relatedClusters.get(clusterKey)))
+                List<String> iter2 = relatedClusters.get(clusterKey).stream().sorted(Comparator.comparingInt(clusterSizes::get)).collect(Collectors.toList());
+                //Collections.shuffle(iter2);
+                for (String relatedClusterKey : iter2)
+                {
+                    //if (!inverseMapping.containsKey(relatedClusterKey)) continue;
+
+                    if (checkIsOkayToMergeClusters(clusterKey, relatedClusterKey, inverseMapping, mapping, synsetKeyToWordKeys, wordKeyToSynsetKeys))
+                    {
+                        for (String relatedSynsetKey : inverseMapping.get(relatedClusterKey))
+                        {
+                            mapping.put(relatedSynsetKey, clusterKey);
+                        }
+
+                        inverseMapping.get(clusterKey).addAll(inverseMapping.get(relatedClusterKey));
+                        inverseMapping.remove(relatedClusterKey);
+
+                        for (String relatedRelatedClusters : relatedClusters.get(relatedClusterKey))
+                        {
+                            if (relatedRelatedClusters.equals(clusterKey)) continue;
+
+                            if (!relatedClusters.get(clusterKey).contains(relatedRelatedClusters))
+                            {
+                                relatedClusters.get(clusterKey).add(relatedRelatedClusters);
+                                relatedClusters.get(relatedRelatedClusters).add(clusterKey);
+                            }
+
+                            relatedClusters.get(relatedRelatedClusters).remove(relatedClusterKey);
+                        }
+                        relatedClusters.get(clusterKey).remove(relatedClusterKey);
+                        relatedClusters.remove(relatedClusterKey);
+
+                        clusterSizes.put(clusterKey, clusterSizes.get(clusterKey) + clusterSizes.get(relatedClusterKey));
+                        clusterSizes.remove(relatedClusterKey);
+
+                        total = inverseMapping.size();
+                        System.out.println(" - size is " + total);
+
+                        continue outer;
+                    }
+                }
+            }
+
+            //total = inverseMapping.size();
+            //System.out.println();
+            //System.out.println("  Size is " + total);
+        }
+        return mapping;
     }
 
     public static Map<String, String> getSenseCompressionClusters(WordnetHelper wn, boolean hypernyms, boolean instanceHypernyms, boolean antonyms)
