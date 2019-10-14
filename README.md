@@ -38,9 +38,9 @@ We provide the two sense mappings used in our paper as standalone files in the d
 
 The files consist of 117659 lines (one line by synset): the left-hand ID is the original synset ID, and the right-hand is the ID of the associated group of synsets.
 
-The file `hypernyms_mapping.txt` results from the sense compression method through hypernyms.
+The file `hypernyms_mapping.txt` results from the sense compression method through hypernyms. The exact algorithm that was used is located in the method `getSenseCompressionThroughHypernymsClusters()` of the file `java/src/main/java/getalp/wsd/utils/WordnetUtils.java`.
 
-The file `all_relations_mapping.txt` results from the method through all relationships.
+The file `all_relations_mapping.txt` results from the method through all relationships. The exact algorithm that was used is located in the method `getSenseCompressionThroughAllRelationsClusters()` of the file `java/src/main/java/getalp/wsd/utils/WordnetUtils.java`.
 
 ## Using pre-trained models
 
