@@ -32,6 +32,16 @@ To install **UFSAC**, simply:
 
 Once the dependencies are installed, please run `./java/compile.sh` to compile the Java code.
 
+## Sense mappings
+
+We provide the two sense mappings used in our paper as standalone files in the directory `sense_mappings`.
+
+The files consist of 117659 lines (one line by synset): the left-hand ID is the original synset ID, and the right-hand is the ID of the associated group of synsets.
+
+The file `hypernyms_mapping.txt` results from the sense compression method through hypernyms.
+
+The file `all_relations_mapping.txt` results from the method through all relationships.
+
 ## Using pre-trained models
 
 We are currently providing one of our best model trained on the SemCor and the WordNet Gloss Tagged, using BERT embeddings, with the vocabulary compression through the hypernymy/hyponymy relationships applied, as described in [our article](https://arxiv.org/abs/1905.05677).
