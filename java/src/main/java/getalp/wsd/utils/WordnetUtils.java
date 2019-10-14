@@ -461,6 +461,16 @@ public class WordnetUtils
         return getReducedSynsetKeysWithHypernyms3(wn);
     }
 
+    public static Map<String, String> getSenseCompressionThroughHypernymsClusters(WordnetHelper wn)
+    {
+        return getReducedSynsetKeysWithHypernyms3(wn);
+    }
+
+    public static Map<String, String> getSenseCompressionThroughHypernymsClusters()
+    {
+        return getReducedSynsetKeysWithHypernyms3(WordnetHelper.wn30());
+    }
+
     public static Map<String, String> getSenseCompressionThroughAntonymsClusters(WordnetHelper wn, Map<String, String> currentClusters)
     {
         Map<String, String> antonymClusters = new HashMap<>();
