@@ -9,7 +9,7 @@ class EmbeddingsBert(Module):
 
     def __init__(self, bert_path: str):
         super().__init__()
-        from pytorch_pretrained_bert import BertModel, BertTokenizer
+        from transformers import BertModel, BertTokenizer
         self.bert_embeddings = BertModel.from_pretrained(bert_path)
         self.bert_tokenizer = BertTokenizer.from_pretrained(bert_path, do_lower_case=False)
         for param in self.bert_embeddings.parameters():
