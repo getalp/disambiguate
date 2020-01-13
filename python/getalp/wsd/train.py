@@ -16,10 +16,13 @@ def main():
     parser.add_argument('--update_frequency', nargs="?", type=int, default=1, help=" ")
     parser.add_argument('--warmup_batch_count', nargs="?", type=int, default=10, help=" ")
     parser.add_argument('--input_embeddings_size', nargs="+", type=int, default=None, help=" ")
+    parser.add_argument('--input_embeddings_tokenize_model', nargs="+", type=str, default=None, help=" ")
     parser.add_argument('--input_elmo_model', nargs="+", type=str, default=None, help=" ")
     parser.add_argument('--input_bert_model', nargs="+", type=str, default=None, help=" ")
+    parser.add_argument('--input_auto_model', nargs="+", type=str, default=None, help=" ")
+    parser.add_argument('--input_auto_path', nargs="+", type=str, default=None, help=" ")
     parser.add_argument('--input_word_dropout_rate', nargs="?", type=float, default=None, help=" ")
-    parser.add_argument('--input_apply_linear', nargs="?", type=str2bool, default=None, help=" ")
+    parser.add_argument('--input_resize', nargs="+", type=int, default=None, help=" ")
     parser.add_argument('--input_linear_size', nargs="?", type=int, default=None, help=" ")
     parser.add_argument('--input_dropout_rate', nargs="?", type=float, default=None, help=" ")
     parser.add_argument('--encoder_type', nargs="?", type=str, default=None, help=" ")
@@ -62,10 +65,13 @@ def main():
     trainer.shuffle_train_on_init = True
     trainer.warmup_batch_count = args.warmup_batch_count
     trainer.input_embeddings_size = args.input_embeddings_size
+    trainer.input_embeddings_tokenize_model = args.input_embeddings_tokenize_model
     trainer.input_elmo_model = args.input_elmo_model
     trainer.input_bert_model = args.input_bert_model
+    trainer.input_auto_model = args.input_auto_model
+    trainer.input_auto_path = args.input_auto_path
     trainer.input_word_dropout_rate = args.input_word_dropout_rate
-    trainer.input_apply_linear = args.input_apply_linear
+    trainer.input_resize = args.input_resize
     trainer.input_linear_size = args.input_linear_size
     trainer.input_dropout_rate = args.input_dropout_rate
     trainer.encoder_type = args.encoder_type

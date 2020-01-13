@@ -27,7 +27,12 @@ class EncoderTransformer(Module):
 
         self.dropout = Dropout(config.encoder_transformer_dropout)
 
-        self.transformer = ModuleList([TransformerEncoderLayer(self.base.resulting_embeddings_size, config.encoder_transformer_heads, config.encoder_transformer_hidden_size, config.encoder_transformer_dropout) for _ in range(config.encoder_transformer_layers)])
+        self.transformer = ModuleList([TransformerEncoderLayer(d_model=self.base.resulting_embeddings_size,
+                                                               heads=config.encoder_transformer_heads,
+                                                               d_ff=config.encoder_transformer_hidden_size,
+                                                               dropout=config.encoder_transformer_dropout,
+                                                               attention_dropout=config.encoder_transformer_dropout)
+                                       for _ in range(config.encoder_transformer_layers)])
         self.layer_norm = LayerNorm(self.base.resulting_embeddings_size, eps=1e-6)
 
         config.encoder_output_size = self.base.resulting_embeddings_size

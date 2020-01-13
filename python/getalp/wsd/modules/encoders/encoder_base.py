@@ -25,12 +25,9 @@ class EncoderBase(Module):
         else:
             self.resulting_embeddings_size = sum(config.input_embeddings_sizes)
 
-        if config.input_apply_linear:
-            if config.input_linear_size is None:
-                self.input_linear = Linear(in_features=self.resulting_embeddings_size, out_features=self.resulting_embeddings_size)
-            else:
-                self.input_linear = Linear(in_features=self.resulting_embeddings_size, out_features=config.input_linear_size)
-                self.resulting_embeddings_size = config.input_linear_size
+        if config.input_linear_size is not None:
+            self.input_linear = Linear(in_features=self.resulting_embeddings_size, out_features=config.input_linear_size)
+            self.resulting_embeddings_size = config.input_linear_size
         else:
             self.input_linear = None
 

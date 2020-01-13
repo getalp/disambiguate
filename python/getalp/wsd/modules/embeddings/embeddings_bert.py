@@ -1,4 +1,4 @@
-from torch.nn import Module, Linear
+from torch.nn import Module
 from getalp.wsd.torch_fix import *
 from torch.nn.utils.rnn import pad_sequence
 from getalp.wsd.torch_utils import default_device
@@ -29,6 +29,8 @@ class EmbeddingsBert(Module):
         current_index = 1  # 0 is [CLS]
         for token in sample_x:
             subtokens = self.bert_tokenizer.tokenize(token)
+            if current_index + len(subtokens) + 1 >= self.bert_tokenizer.max_len:
+                break
             seq_token_indices.append(current_index)
             current_index += len(subtokens)
             for subtoken in subtokens:

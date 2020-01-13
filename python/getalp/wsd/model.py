@@ -1,9 +1,8 @@
-from torch.nn import Module, ModuleList, CrossEntropyLoss
-from torch.nn.functional import log_softmax
+from torch.nn import Module, CrossEntropyLoss
 from torch.optim import Adam
 import torch
 from getalp.wsd.loss.label_smoothed_cross_entropy import LabelSmoothedCrossEntropyCriterion
-from getalp.wsd.modules.embeddings import get_elmo_embeddings, get_bert_embeddings, EmbeddingsLUT
+from getalp.wsd.modules.embeddings import get_elmo_embeddings, get_bert_embeddings, get_auto_embeddings, EmbeddingsLUT
 from getalp.wsd.modules.encoders import EncoderBase, EncoderLSTM, EncoderTransformer
 from getalp.wsd.modules.decoders import DecoderClassify, DecoderTranslateTransformer
 from getalp.wsd.optim import SchedulerFixed, SchedulerNoam
@@ -11,14 +10,14 @@ from getalp.wsd.model_config import ModelConfig
 from getalp.wsd.data_config import DataConfig
 from getalp.wsd.torch_utils import default_device
 import random
-from typing import List, Union
+from typing import List, Union, Optional
 
 
 class Model(object):
 
     def __init__(self, config: ModelConfig):
         self.config: ModelConfig = config
-        self.backend: TorchModel = None
+        self.backend: Optional[TorchModel] = None
         self.optimizer: TorchModelOptimizer = TorchModelOptimizer()
         self.classification_criterion = CrossEntropyLoss(ignore_index=0)
         self.translation_criterion = LabelSmoothedCrossEntropyCriterion(label_smoothing=0.1, ignore_index=0)
@@ -82,6 +81,9 @@ class Model(object):
 
     def train_on_batch(self, batch_x, batch_y, batch_tt):
         self.backend.train()
+        for i in range(len(self.backend.embeddings)):
+            if self.backend.embeddings[i].is_fixed():
+                self.backend.embeddings[i].eval()
         losses, total_loss = self.forward_and_compute_loss(batch_x, batch_y, batch_tt)
         total_loss.backward()
         return losses
@@ -231,12 +233,15 @@ class TorchModel(Module):
                 module = get_elmo_embeddings(elmo_path=config.input_elmo_path[i], input_vocabulary=data_config.input_vocabularies[i], clear_text=data_config.input_clear_text[i])
             elif config.input_bert_path[i] is not None:
                 module = get_bert_embeddings(bert_path=config.input_bert_path[i], clear_text=data_config.input_clear_text[i])
+            elif config.input_auto_path[i] is not None:
+                module = get_auto_embeddings(auto_model=config.input_auto_model[i], auto_path=config.input_auto_path[i], clear_text=data_config.input_clear_text[i])
             else:
-                module = EmbeddingsLUT(input_embeddings=data_config.input_embeddings[i], input_vocabulary_size=data_config.input_vocabulary_sizes[i], input_embeddings_size=config.input_embeddings_sizes[i], clear_text=data_config.input_clear_text[i])
+                module = EmbeddingsLUT(input_embeddings=data_config.input_embeddings[i], input_vocabulary_size=data_config.input_vocabulary_sizes[i], input_embeddings_size=config.input_embeddings_sizes[i], clear_text=data_config.input_clear_text[i], tokenize_model=config.input_embeddings_tokenize_model[i])
             config.input_embeddings_sizes[i] = module.get_output_dim()
             self.add_module("input_embedding" + str(i), module)
             self.embeddings.append(module)
 
+        self.encoder: Optional[Module] = None
         if config.encoder_type == "lstm":
             self.encoder = EncoderLSTM(config)
         elif config.encoder_type == "transformer":

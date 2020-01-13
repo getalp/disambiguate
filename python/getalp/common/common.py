@@ -7,6 +7,16 @@ def create_directory_if_not_exists(directory_path):
     pathlib.Path(directory_path).mkdir(parents=True, exist_ok=True)
 
 
+def rename_file_if_exists(src_path, dest_path):
+    if os.path.isfile(src_path):
+        os.replace(src_path, dest_path)
+
+
+def remove_file_if_exists(file_path):
+    if os.path.isfile(file_path):
+        os.remove(file_path)
+
+
 def get_abs_path(path):
     if path is None:
         return None

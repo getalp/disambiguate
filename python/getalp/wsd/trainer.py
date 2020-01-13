@@ -1,3 +1,4 @@
+from getalp.common.common import rename_file_if_exists, remove_file_if_exists
 from getalp.wsd.common import *
 from getalp.wsd.model import Model, ModelConfig, DataConfig
 from getalp.common.common import create_directory_if_not_exists, set_if_not_none
@@ -29,12 +30,13 @@ class Trainer(object):
         self.shuffle_train_on_init = bool()
         self.warmup_batch_count: int = int()
         self.input_embeddings_size: List[int] = None
+        self.input_embeddings_tokenize_model: List[str] = None
         self.input_elmo_model: List[str] = None
         self.input_bert_model: List[str] = None
-        self.input_flair_model: List[str] = None
+        self.input_auto_model: List[str] = None
+        self.input_auto_path: List[str] = None
         self.input_word_dropout_rate: float = None
         self.input_resize: List[int] = None
-        self.input_apply_linear: bool = None
         self.input_linear_size: int = None
         self.input_dropout_rate: float = None
         self.encoder_type: str = None
@@ -65,9 +67,13 @@ class Trainer(object):
 
     def train(self):
         model_weights_last_path = self.model_path + "/model_weights_last"
+        model_weights_before_last_path = self.model_path + "/model_weights_before_last"
         model_weights_loss_path = self.model_path + "/model_weights_loss"
+        model_weights_loss_before_path = self.model_path + "/model_weights_loss_before"
         model_weights_wsd_path = self.model_path + "/model_weights_wsd"
+        model_weights_wsd_before_path = self.model_path + "/model_weights_wsd_before"
         model_weights_bleu_path = self.model_path + "/model_weights_bleu"
+        model_weights_bleu_before_path = self.model_path + "/model_weights_bleu_before"
         model_weights_end_of_epoch_path = self.model_path + "/model_weights_end_of_epoch_"
         training_info_path = self.model_path + "/training_info"
         tensorboard_path = self.model_path + "/tensorboard"
@@ -83,16 +89,19 @@ class Trainer(object):
 
         # change config from CLI parameters
         config.input_embeddings_sizes = set_if_not_none(self.input_embeddings_size, config.input_embeddings_sizes)
+        if self.input_embeddings_tokenize_model is not None:
+            config.set_input_embeddings_tokenize_model(self.input_embeddings_tokenize_model)
         if self.input_elmo_model is not None:
             config.set_input_elmo_path(self.input_elmo_model)
         if self.input_bert_model is not None:
             config.set_input_bert_model(self.input_bert_model)
-        if self.input_flair_model is not None:
-            config.set_input_flair_model(self.input_flair_model)
+        if self.input_auto_model is not None:
+            config.set_input_auto_model(self.input_auto_model, self.input_auto_path)
         if self.input_word_dropout_rate is not None:
             config.input_word_dropout_rate = self.input_word_dropout_rate
             eprint("Warning: input_word_dropout_rate is not implemented")
-        config.input_apply_linear = set_if_not_none(self.input_apply_linear, config.input_apply_linear)
+        if self.input_resize is not None:
+            config.set_input_resize(self.input_resize)
         config.input_linear_size = set_if_not_none(self.input_linear_size, config.input_linear_size)
         config.input_dropout_rate = set_if_not_none(self.input_dropout_rate, config.input_dropout_rate)
         config.encoder_type = set_if_not_none(self.encoder_type, config.encoder_type)
@@ -123,15 +132,23 @@ class Trainer(object):
         current_batch = 0
         current_batch_total = 0
         current_sample_index = 0
+        skipped_batch = 0
         best_dev_loss = None
         best_dev_wsd = None
         best_dev_bleu = None
         random_seed = self.generate_random_seed()
 
-        if not self.reset and os.path.isfile(training_info_path) and os.path.isfile(model_weights_last_path):
+        if not self.reset and os.path.isfile(training_info_path) and (os.path.isfile(model_weights_last_path) or os.path.isfile(model_weights_before_last_path)):
             print("Resuming from previous training")
             current_ensemble, current_epoch, current_batch, current_batch_total, current_sample_index, best_dev_loss, best_dev_wsd, best_dev_bleu, random_seed = load_training_info(training_info_path)
-            model.load_model_weights(model_weights_last_path)
+            try:
+                model.load_model_weights(model_weights_last_path)
+            except RuntimeError as e:
+                if os.path.isfile(model_weights_before_last_path):
+                    print("Warning - loading before last weights: " + str(e))
+                    model.load_model_weights(model_weights_before_last_path)
+                else:
+                    raise e
         else:
             print("Creating model")
             model.create_model()
@@ -167,7 +184,7 @@ class Trainer(object):
             random.seed(random_seed)
             random.shuffle(train_samples)
 
-        self.print_state(current_ensemble, current_epoch, current_batch, current_batch_total, len(train_samples), current_sample_index, [None for _ in range(data_config.output_features + data_config.output_translations * data_config.output_translation_features)], [None for _ in range(data_config.output_features + data_config.output_translations * data_config.output_translation_features)], [None for _ in range(data_config.output_features)], None)
+        self.print_state(current_ensemble, current_epoch, current_batch, current_batch_total, len(train_samples), current_sample_index, skipped_batch, [None for _ in range(data_config.output_features + data_config.output_translations * data_config.output_translation_features)], [None for _ in range(data_config.output_features + data_config.output_translations * data_config.output_translation_features)], [None for _ in range(data_config.output_features)], None)
 
         if self.reset:
             shutil.rmtree(tensorboard_path, ignore_errors=True)
@@ -183,20 +200,34 @@ class Trainer(object):
 
                 model.update_learning_rate(step=current_batch_total)
 
-                print("training sample " + str(current_sample_index) + "/" + str(len(train_samples)), end="\r")
+                if skipped_batch == 0:
+                    print("training sample " + str(current_sample_index) + "/" + str(len(train_samples)), end="\r")
+                else:
+                    print("training sample " + str(current_sample_index) + "/" + str(len(train_samples)) + " (skipped " + str(skipped_batch) + " batch)", end="\r")
                 sys.stdout.flush()
 
                 reached_eof = False
                 model.begin_train_on_batch()
-                for _ in range(self.update_every_batch):
+                sub_batch_index = 0
+                while sub_batch_index < self.update_every_batch:
                     batch_x, batch_y, batch_z, batch_tt, actual_batch_size, reached_eof = read_batch_from_samples(train_samples, self.batch_size, self.token_per_batch, current_sample_index, data_config.input_features, data_config.output_features, data_config.output_translations, data_config.output_translation_features, data_config.input_clear_text, data_config.output_translation_clear_text)
                     if actual_batch_size == 0:
                         break
-                    batch_losses = model.train_on_batch(batch_x, batch_y, batch_tt)
-                    if train_losses is None:
-                        train_losses = [0 for _ in batch_losses]
-                    for i in range(len(batch_losses)):
-                        train_losses[i] += batch_losses[i] * actual_batch_size
+                    try:
+                        batch_losses = model.train_on_batch(batch_x, batch_y, batch_tt)
+                        if train_losses is None:
+                            train_losses = [0 for _ in batch_losses]
+                        for i in range(len(batch_losses)):
+                            train_losses[i] += batch_losses[i] * actual_batch_size
+                        sub_batch_index += 1
+                    except RuntimeError as e:
+                        # print()
+                        # print("Warning - skipping batch: " + str(e))
+                        # vvv does not work because batch_x[0] may be a tuple (see bert embeddings), we should guarantee that it is a tuple
+                        # print('Warning: skipping batch (batch size was ' + str(actual_batch_size) + ', sentence length was ' + str(batch_x[0].size(1)) + ")")
+                        skipped_batch += 1
+                        torch.cuda.empty_cache()
+                        model.begin_train_on_batch()
                     current_sample_index += actual_batch_size
                     sample_accumulate_between_eval += actual_batch_size
                     current_batch += 1
@@ -219,28 +250,37 @@ class Trainer(object):
                     dev_losses, dev_wsd, dev_bleu = self.test_on_dev(dev_samples, model)
                     for i in range(len(train_losses)):
                         train_losses[i] /= float(sample_accumulate_between_eval)
-                    self.print_state(current_ensemble, current_epoch, current_batch, current_batch_total, len(train_samples), current_sample_index, train_losses, dev_losses, dev_wsd, dev_bleu)
+                    self.print_state(current_ensemble, current_epoch, current_batch, current_batch_total, len(train_samples), current_sample_index, skipped_batch, train_losses, dev_losses, dev_wsd, dev_bleu)
                     self.write_tensorboard(tb_writer, current_epoch, train_samples, current_sample_index, train_losses, dev_losses, dev_wsd, data_config.output_feature_names, dev_bleu, model.optimizer.scheduler.get_learning_rate(current_batch_total))
                     sample_accumulate_between_eval = 0
                     train_losses = None
+                    skipped_batch = 0
 
                     if best_dev_loss is None or dev_losses[0] < best_dev_loss:
                         if self.save_best_loss:
+                            rename_file_if_exists(model_weights_loss_path + str(current_ensemble), model_weights_loss_before_path + str(current_ensemble))
                             model.save_model_weights(model_weights_loss_path + str(current_ensemble))
+                            remove_file_if_exists(model_weights_loss_before_path + str(current_ensemble))
                             print("New best dev loss: " + str(dev_losses[0]))
                         best_dev_loss = dev_losses[0]
 
                     if len(dev_wsd) > 0 and (best_dev_wsd is None or dev_wsd[0] > best_dev_wsd):
+                        rename_file_if_exists(model_weights_wsd_path + str(current_ensemble), model_weights_wsd_before_path + str(current_ensemble))
                         model.save_model_weights(model_weights_wsd_path + str(current_ensemble))
+                        remove_file_if_exists(model_weights_wsd_before_path + str(current_ensemble))
                         best_dev_wsd = dev_wsd[0]
                         print("New best dev WSD: " + str(best_dev_wsd))
 
                     if (best_dev_bleu is None or dev_bleu > best_dev_bleu) and dev_bleu is not None:
+                        rename_file_if_exists(model_weights_bleu_path + str(current_ensemble), model_weights_bleu_before_path + str(current_ensemble))
                         model.save_model_weights(model_weights_bleu_path + str(current_ensemble))
+                        remove_file_if_exists(model_weights_bleu_before_path + str(current_ensemble))
                         best_dev_bleu = dev_bleu
                         print("New best dev BLEU: " + str(best_dev_bleu))
 
+                    rename_file_if_exists(model_weights_last_path, model_weights_before_last_path)
                     model.save_model_weights(model_weights_last_path)
+                    remove_file_if_exists(model_weights_before_last_path)
                     save_training_info(training_info_path, current_ensemble, current_epoch, current_batch, current_batch_total, current_sample_index, best_dev_loss, best_dev_wsd, best_dev_bleu, random_seed)
 
             model.create_model()
@@ -255,9 +295,10 @@ class Trainer(object):
         return int.from_bytes(os.urandom(8), byteorder='big', signed=False)
 
     @staticmethod
-    def print_state(current_ensemble, current_epoch, current_batch, current_batch_total, samples_count, current_sample, train_losses, dev_losses, dev_wsd, dev_bleu):
+    def print_state(current_ensemble, current_epoch, current_batch, current_batch_total, samples_count, current_sample, skipped_batch, train_losses, dev_losses, dev_wsd, dev_bleu):
         print("Ensemble " + str(current_ensemble) + " - Epoch " + str(current_epoch) + " - Batch " + str(current_batch) +
               " - Sample " + str(current_sample) + " - Total Batch " + str(current_batch_total) + " - Total Sample " + str(current_epoch * samples_count + current_sample) +
+              " - Skipped " + str(skipped_batch) + " batch" +
               " - Train losses = " + str(train_losses) +
               " - Dev losses = " + str(dev_losses) + " - Dev wsd = " + str(dev_wsd) + " - Dev bleu = " + str(dev_bleu))
 
