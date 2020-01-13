@@ -5,6 +5,21 @@ This repository contains a set of easy-to-use tools for training, evaluating and
 
 This is the implementation used in the article [Sense Vocabulary Compression through the Semantic Knowledge of WordNet for Neural Word Sense Disambiguation](https://arxiv.org/abs/1905.05677), written by Loïc Vial, Benjamin Lecouteux and Didier Schwab.
 
+
+
+## Table of Contents
+* [Dependencies](#dependencies)
+* [Compilation](#compilation)
+* [Sense mappings](#sense-mappings)
+* [Using pre-trained models](#using-pre-trained-models)
+   * [Disambiguating raw text](#disambiguating-raw-text)
+   * [Evaluating a model](#evaluating-a-model)
+* [Training new WSD models](#training-new-wsd-models)
+   * [Preparing data](#preparing-data)
+   * [Training a model (or an ensemble of models)](#training-a-model-or-an-ensemble-of-models)
+* [Citation](#citation)
+
+
 ## Dependencies
 - Python (version 3.6 or higher) - <https://python.org>
 - Java (version 8 or higher) - <https://java.com>
@@ -129,3 +144,16 @@ Call the `./train.sh` script with the following main arguments:
 - `--encoder_transformer_dropout [N]` (default `0.1`)
 - `--reset [true|false]` (default `false`) if you do not want to resume a previous training. Be careful as it will effectively resets the training state and the model weights saved in the `--model_path`
 
+
+## Citation
+
+If you want to reference [our paper](https://arxiv.org/abs/1912.05372), please use the following BibTeX snippet:
+
+```
+@InProceedings{vial-etal-2019-sense,
+  author      = {Vial, Lo{\"i}c and Lecouteux, Benjamin and Schwab, Didier},
+  title       = {{Sense Vocabulary Compression through the Semantic Knowledge of WordNet for Neural Word Sense Disambiguation}},
+  booktitle   = {{Proceedings of the 10th Global Wordnet Conference}},
+  year        = {2019},
+  address     = {Wroclaw, Poland},
+}
