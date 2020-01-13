@@ -9,10 +9,11 @@ This is the implementation used in the article [Sense Vocabulary Compression thr
 - Python (version 3.6 or higher) - <https://python.org>
 - Java (version 8 or higher) - <https://java.com>
 - Maven - <https://maven.apache.org>
+- UFSAC - <https://github.com/getalp/UFSAC>
 - PyTorch (version 1.0.0 or higher) - <https://pytorch.org>
 - (optional, for using ELMo) AllenNLP - <https://allennlp.org>
-- (optional, for using BERT) huggingface's pytorch-pretrained-BERT - <https://github.com/huggingface/pytorch-pretrained-BERT>
-- UFSAC - <https://github.com/getalp/UFSAC>
+- (optional, for using BERT) HuggingFace's pytorch-pretrained-BERT - <https://github.com/huggingface/pytorch-pretrained-BERT>
+- **:metal: New :metal:** (optional, for using other LM but also includes BERT)) HuggingFace's transformers - <https://github.com/huggingface/transformers>
 
 To install **Python**, **Java** and **Maven**, you can use the package manager of your distribution (apt-get, pacman...).
 
@@ -20,7 +21,9 @@ To install **PyTorch**, please follow the instructions on [this page](https://py
 
 To install **AllenNLP** (necessary if using ELMo), please follow the instructions on [this page](https://allennlp.org/tutorials).
 
-To install **huggingface's pytorch-pretrained-BERT** (necessary if using BERT), please follow the instructions on [this page](https://github.com/huggingface/pytorch-pretrained-BERT).
+To install **HuggingFace's pytorch-pretrained-BERT** (necessary if using BERT), please follow the instructions on [this page](https://github.com/huggingface/pytorch-pretrained-BERT).
+
+**:metal: New :metal:** To install **HuggingFace's transformers** (necessary if using any other language model supported by the [transformer](https://github.com/huggingface/transformers) library, but also includes BERT)), please follow the instructions on [this page](https://github.com/huggingface/transformers).
 
 To install **UFSAC**, simply:
 
@@ -113,6 +116,8 @@ Call the `./train.sh` script with the following main arguments:
 - `--input_embeddings_size [N]` (default `300`) is the size of input embeddings (if not using pre-trained embeddings, BERT nor ELMo)
 - `--input_elmo_model [MODEL]` is the name of the ELMo model to use (one of `small`, `medium` or `original`), it will be downloaded automatically.
 - `--input_bert_model [MODEL]` is the name of the BERT model to use (of the form `bert-{base,large}-(multilingual-)(un)cased`), it will be downloaded automatically.
+- `--input_auto_path [NAME_OR_PATH]` is the name of any language model supported by the [transformer](https://github.com/huggingface/transformers) library, or the path to a local model supported by the library
+- `--input_auto_model [MODEL]` is optionally used jointly with `--input_auto_path` if there is an ambiguity in automatically resolving the auto model's type. `MODEL` must be one of `camembert`, `flaubert` or `xlm`.
 - `--encoder_type [ENCODER]` (default `lstm`) is one of `lstm` or `transformer`.
 - `--encoder_lstm_hidden_size [N]` (default `1000`)
 - `--encoder_lstm_layers [N]` (default `1`)
