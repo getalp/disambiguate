@@ -27,6 +27,7 @@ public class NeuralWSDPrepare
         parser.addArgument("exclude_line_length", "150");
         parser.addArgument("line_length_tokenizer", "null");
         parser.addArgument("lowercase", "false");
+        parser.addArgument("filter_lemma", "true");
         parser.addArgument("uniform_dash", "false");
         parser.addArgument("sense_compression_hypernyms", "true");
         parser.addArgument("sense_compression_instance_hypernyms", "false");
@@ -53,6 +54,7 @@ public class NeuralWSDPrepare
         int outputFeatureVocabularyLimit = parser.getArgValueInteger("output_feature_vocabulary_limit");
         int maxLineLength = parser.getArgValueInteger("truncate_line_length");
         boolean lowercase = parser.getArgValueBoolean("lowercase");
+        boolean filterLemma = parser.getArgValueBoolean("filter_lemma");
         boolean uniformDash = parser.getArgValueBoolean("uniform_dash");
         boolean senseCompressionHypernyms = parser.getArgValueBoolean("sense_compression_hypernyms");
         boolean senseCompressionInstanceHypernyms = parser.getArgValueBoolean("sense_compression_instance_hypernyms");
@@ -124,6 +126,7 @@ public class NeuralWSDPrepare
 
         preparator.maxLineLength = maxLineLength;
         preparator.lowercaseWords = lowercase;
+        preparator.filterLemma = filterLemma;
         preparator.uniformDash = uniformDash;
         preparator.multisenses = false;
         preparator.removeAllCoarseGrained = true;

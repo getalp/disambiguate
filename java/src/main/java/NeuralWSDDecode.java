@@ -21,6 +21,8 @@ public class NeuralWSDDecode
         new NeuralWSDDecode().decode(args);
     }
 
+    private boolean filterLemma;
+
     private boolean mfsBackoff;
 
     private Disambiguator firstSenseDisambiguator;
@@ -42,9 +44,10 @@ public class NeuralWSDDecode
         parser.addArgument("sense_compression_instance_hypernyms", "false");
         parser.addArgument("sense_compression_antonyms", "false");
         parser.addArgument("sense_compression_file", "");
-        parser.addArgument("clear_text", "false");
+        parser.addArgument("clear_text", "true");
         parser.addArgument("batch_size", "1");
         parser.addArgument("truncate_max_length", "150");
+        parser.addArgument("filter_lemma", "true");
         parser.addArgument("mfs_backoff", "true");
         if (!parser.parse(args)) return;
 
@@ -59,8 +62,9 @@ public class NeuralWSDDecode
         boolean clearText = parser.getArgValueBoolean("clear_text");
         int batchSize = parser.getArgValueInteger("batch_size");
         int truncateMaxLength = parser.getArgValueInteger("truncate_max_length");
+        filterLemma = parser.getArgValueBoolean("filter_lemma");
         mfsBackoff = parser.getArgValueBoolean("mfs_backoff");
-        
+
         Map<String, String> senseCompressionClusters = null;
         if (senseCompressionHypernyms || senseCompressionAntonyms)
         {
@@ -75,6 +79,7 @@ public class NeuralWSDDecode
         firstSenseDisambiguator = new FirstSenseDisambiguator(WordnetHelper.wn30());
         neuralDisambiguator = new NeuralDisambiguator(pythonPath, dataPath, weights, clearText, batchSize);
         neuralDisambiguator.lowercaseWords = lowercase;
+        neuralDisambiguator.filterLemma = filterLemma;
         neuralDisambiguator.reducedOutputVocabulary = senseCompressionClusters;
 
         reader = new BufferedReader(new InputStreamReader(System.in));
@@ -85,9 +90,12 @@ public class NeuralWSDDecode
             Sentence sentence = new Sentence(line);
             if (sentence.getWords().size() > truncateMaxLength)
             {
-               sentence.getWords().stream().skip(truncateMaxLength).collect(Collectors.toList()).forEach(sentence::removeWord);
+                sentence.getWords().stream().skip(truncateMaxLength).collect(Collectors.toList()).forEach(sentence::removeWord);
             }
-            tagger.tag(sentence.getWords());
+            if (filterLemma)
+            {
+                tagger.tag(sentence.getWords());
+            }
             sentences.add(sentence);
             if (sentences.size() >= batchSize)
             {
@@ -113,7 +121,7 @@ public class NeuralWSDDecode
             for (Word word : sentence.getWords())
             {
                 writer.write(word.getValue().replace("|", "/"));
-                if (word.hasAnnotation("lemma") && word.hasAnnotation("pos") && word.hasAnnotation("wsd"))
+                if (/*word.hasAnnotation("lemma") && word.hasAnnotation("pos") && */ word.hasAnnotation("wsd"))
                 {
                     writer.write("|" + word.getAnnotationValue("wsd"));
                 }

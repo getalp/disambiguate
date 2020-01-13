@@ -1,11 +1,13 @@
 import getalp.wsd.common.wordnet.WordnetHelper;
+import getalp.wsd.method.Disambiguator;
+import getalp.wsd.method.FirstSenseDisambiguator;
 import getalp.wsd.method.neural.NeuralDisambiguator;
 import getalp.wsd.ufsac.core.Sentence;
 import getalp.wsd.ufsac.streaming.modifier.StreamingCorpusModifierSentence;
 import getalp.wsd.ufsac.utils.CorpusPOSTaggerAndLemmatizer;
-import getalp.wsd.utils.ArgumentParser;
+import getalp.wsd.common.utils.ArgumentParser;
 import getalp.wsd.utils.WordnetUtils;
-import getalp.wsd.common.utils.Wrapper;
+
 import java.util.List;
 
 public class NeuralWSDDecodeUFSAC
@@ -18,9 +20,11 @@ public class NeuralWSDDecodeUFSAC
         parser.addArgumentList("weights");
         parser.addArgument("input");
         parser.addArgument("output");
-        parser.addArgument("lowercase", "true");
+        parser.addArgument("lowercase", "false");
         parser.addArgument("sense_reduction", "true");
-        parser.addArgument("lemma_pos_tagged", "false");
+        parser.addArgument("clear_text", "true");
+        parser.addArgument("batch_size", "1");
+        parser.addArgument("mfs_backoff", "true");
         if (!parser.parse(args)) return;
 
         String pythonPath = parser.getArgValue("python_path");
@@ -30,32 +34,32 @@ public class NeuralWSDDecodeUFSAC
         String outputPath = parser.getArgValue("output");
         boolean lowercase = parser.getArgValueBoolean("lowercase");
         boolean senseReduction = parser.getArgValueBoolean("sense_reduction");
-        boolean lemmaPOSTagged = parser.getArgValueBoolean("lemma_pos_tagged");
+        boolean clearText = parser.getArgValueBoolean("clear_text");
+        int batchSize = parser.getArgValueInteger("batch_size");
+        boolean mfsBackoff = parser.getArgValueBoolean("mfs_backoff");
 
-        Wrapper<CorpusPOSTaggerAndLemmatizer> lemmaPOSTagger = new Wrapper<>(null);
-        if (!lemmaPOSTagged)
-        {
-            lemmaPOSTagger.obj = new CorpusPOSTaggerAndLemmatizer();
-        }
-        NeuralDisambiguator disambiguator = new NeuralDisambiguator(pythonPath, dataPath, weights);
-        disambiguator.lowercaseWords = lowercase;
-        if (senseReduction) disambiguator.reducedOutputVocabulary = WordnetUtils.getReducedSynsetKeysWithHypernyms3(WordnetHelper.wn30());
-        else disambiguator.reducedOutputVocabulary = null;
+        CorpusPOSTaggerAndLemmatizer tagger = new CorpusPOSTaggerAndLemmatizer();
+        Disambiguator firstSenseDisambiguator = new FirstSenseDisambiguator(WordnetHelper.wn30());
+        NeuralDisambiguator neuralDisambiguator = new NeuralDisambiguator(pythonPath, dataPath, weights, clearText, batchSize);
+        neuralDisambiguator.lowercaseWords = lowercase;
+        if (senseReduction) neuralDisambiguator.reducedOutputVocabulary = WordnetUtils.getReducedSynsetKeysWithHypernyms3(WordnetHelper.wn30());
+        else neuralDisambiguator.reducedOutputVocabulary = null;
 
         StreamingCorpusModifierSentence modifier = new StreamingCorpusModifierSentence()
         {
             public void modifySentence(Sentence sentence)
             {
-                if (lemmaPOSTagger.obj != null)
+                tagger.tag(sentence.getWords());
+                neuralDisambiguator.disambiguate(sentence, "wsd");
+                if (mfsBackoff)
                 {
-                    lemmaPOSTagger.obj.tag(sentence.getWords());
+                    firstSenseDisambiguator.disambiguate(sentence, "wsd");
                 }
-                disambiguator.disambiguate(sentence, "wsd");
             }
         };
 
         modifier.load(inputPath, outputPath);
-        disambiguator.close();
+        neuralDisambiguator.close();
     }
 }
 

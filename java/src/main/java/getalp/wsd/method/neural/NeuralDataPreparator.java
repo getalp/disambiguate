@@ -116,6 +116,8 @@ public class NeuralDataPreparator
 
     public boolean lowercaseWords = true;
 
+    public boolean filterLemma = true;
+
     public boolean addWordKeyFromSenseKey = false;
 
     public boolean uniformDash = false;
