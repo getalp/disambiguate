@@ -26,6 +26,11 @@ class EmbeddingsAuto(Module):
             from transformers import BertModel, BertTokenizer
             self.auto_embeddings = BertModel.from_pretrained(auto_path)
             self.auto_tokenizer = BertTokenizer.from_pretrained(auto_path)
+        elif "distilroberta-base" in auto_model:
+            from transformers import RobertaModel, RobertaTokenizer
+            self.auto_embeddings = RobertaModel.from_pretrained('distilroberta-base')
+            self.auto_tokenizer = RobertaTokenizer.from_pretrained('distilroberta-base')
+
         else:
             from transformers import AutoModel, AutoTokenizer, XLMTokenizer
             self.auto_embeddings = AutoModel.from_pretrained(auto_path)
