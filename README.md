@@ -62,21 +62,24 @@ The file `all_relations_mapping.txt` results from the method through all relatio
 
 ## Using pre-trained models
 
-We are currently providing one of our best model trained on the SemCor and the WordNet Gloss Tagged, using BERT embeddings, with the vocabulary compression through the hypernymy/hyponymy relationships applied, as described in [our article](https://arxiv.org/abs/1905.05677).
+We are currently providing our best models trained on the SemCor and the WordNet Gloss Corpus, using BERT embeddings, with the vocabulary compression through the hypernymy/hyponymy relationships applied, as described in [our article](https://arxiv.org/abs/1905.05677).
 
-Here is the link to the data: <https://drive.google.com/file/d/14OmLqKsbV4M50WN8DvqN76uJl5E96iTo>
+| Model | URL |
+| --- | --- |
+| SemCor + WNGC, hypernyms, single | https://zenodo.org/record/3759385 |
+| SemCor + WNGC, hypernyms, ensemble | https://zenodo.org/record/3759301 |
 
 Once the data are downloaded and extracted, you can use the following commands (replace `$DATADIR` with the path of the appropriate folder):
 
 ### Disambiguating raw text
 
-- `./decode.sh --data_path $DATADIR --weights $DATADIR/model_weights_wsd0`
+- `./decode.sh --data_path $DATADIR --weights $DATADIR/model_weights_wsd*`
 
   This script allows to disambiguate raw text from the standard input to the standard output
 
 ### Evaluating a model
 
-- `./evaluate.sh --data_path $DATADIR --weights $DATADIR/model_weights_wsd0 --corpus [UFSAC corpus]...` 
+- `./evaluate.sh --data_path $DATADIR --weights $DATADIR/model_weights_wsd* --corpus [UFSAC corpus]...` 
 
   This script evaluates a WSD model by computing its coverage, precision, recall and F1 scores on sense annotated corpora in the UFSAC format, with and without first sense backoff.
 
